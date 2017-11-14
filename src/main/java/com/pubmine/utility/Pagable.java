@@ -1,7 +1,5 @@
 package com.pubmine.utility;
 
-import net.minidev.json.annotate.JsonIgnore;
-
 public class Pagable {
 	
 	private int page;
@@ -10,7 +8,6 @@ public class Pagable {
 	private int totalCount;
 	private int totalPages;
 	
-	@JsonIgnore
 	private int offset;
 
 	public Pagable() {

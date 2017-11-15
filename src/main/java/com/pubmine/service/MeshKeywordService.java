@@ -1,11 +1,13 @@
 package com.pubmine.service;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -107,7 +109,7 @@ public class MeshKeywordService {
 	public void meshSearchAndSave() {
 
 		MeshTable meshTable = this.read();
-		System.out.println("=>Finish read data!!!");
+		System.out.println("=> Finish read data!!!");
 		
 		Map<String, List<Mesh>> mapMesh = new HashMap<>();
 		mapMesh.put("mesh_anatomy_sentence", meshTable.getMeshAnatomy());
@@ -117,48 +119,31 @@ public class MeshKeywordService {
 		
 		Pagable paging = new Pagable();
 		paging.setLimit(meshLimit);
-		int page = 0, i=0;
+		int page = 0;
 		
 		for(Map.Entry<String, List<Mesh>> map: mapMesh.entrySet()){
-			System.out.println("Inserting " + map.getKey());
-			PrintWriter pw = null;
-			try{
-				pw = new PrintWriter(new File(String.format("%s/%s.csv", csvPath, map.getKey())));
-				String csvHeader = String.format("%s\t%s\t%s", "id", "pmid", "setence_order");
-				pw.println(csvHeader);
-				//i=0;
-				for (Mesh m : map.getValue()) {
-					page = 1;
-					do{
-						paging.setPage(page);
-						List<MeshTreeSentence> meshTreeSentences = sentenceService.searchForMeshTree(m, paging);
-						
-						if(meshTreeSentences.size() > 0){
-							this.writeCSV(pw, meshTreeSentences);
-						}
-						page++;
-					}while(page <= paging.getTotalPages());
+			System.out.println("=> Executing table: " + map.getKey());
+			for (Mesh m : map.getValue()) {
+				page = 1;
+				do{
+					paging.setPage(page);
+					List<MeshTreeSentence> meshTreeSentences = sentenceService.searchForMeshTree(m, paging);
 					
-					/*
-					i++;
-					if(i>5)
-						break;
-					*/
-				}
-				
-			}catch(Exception ex){
-				ex.printStackTrace();
-			}finally{
-				pw.close();
+					if(meshTreeSentences.size() > 0){
+						
+						long start = System.currentTimeMillis();
+						try (ObjectOutputStream ois = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(String.format("%s/%s.out", csvPath, map.getKey()), true)))){
+							ois.writeObject(meshTreeSentences);
+							
+						}catch (Exception e) {
+							e.printStackTrace();
+						}finally{
+							System.out.println(String.format("-> Finish writing file in %s seconds\n", (System.currentTimeMillis() - start) * Math.pow(10, -3)));
+						}
+					}
+					page++;
+				}while(page <= paging.getTotalPages());
 			}
 		}
 	}
-
-	private void writeCSV(PrintWriter pw, List<MeshTreeSentence> meshTreeSentences) {
-		for (MeshTreeSentence m : meshTreeSentences) {
-			String csvBody = String.format("%s\t%s\t%s", m.getId(), m.getPmid(), m.getSentenceOrder());
-			pw.println(csvBody);
-		}
-	}
-	
 }

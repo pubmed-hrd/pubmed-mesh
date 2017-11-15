@@ -1,7 +1,11 @@
 package com.pubmine.model;
 
-public class MeshTreeSentence {
+import java.io.Serializable;
 
+public class MeshTreeSentence implements Serializable{
+	
+	private static final long serialVersionUID = 1L;
+	
 	private String id;
 	private Integer pmid;
 	private Integer sentenceOrder;

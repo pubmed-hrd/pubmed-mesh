@@ -133,6 +133,7 @@ public class MeshKeywordService {
 						
 						long start = System.currentTimeMillis();
 						try (ObjectOutputStream ois = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(String.format("%s/%s.out", csvPath, map.getKey()), true)))){
+							System.out.println("=> Saving to file!!!");
 							ois.writeObject(meshTreeSentences);
 							
 						}catch (Exception e) {
@@ -145,5 +146,6 @@ public class MeshKeywordService {
 				}while(page <= paging.getTotalPages());
 			}
 		}
+		
 	}
 }

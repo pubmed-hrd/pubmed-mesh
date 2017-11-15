@@ -39,8 +39,6 @@ public class SentenceService {
 
 	public List<MeshTreeSentence> searchForMeshTree(Mesh mesh, Pagable paging) {
 		
-		long start = System.currentTimeMillis();
-		
 		try {
 			reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
 			searcher = new IndexSearcher(reader);
@@ -50,22 +48,26 @@ public class SentenceService {
 
 			Query query;
 			try {
-				
 				if(mesh.getKeyword().equals(""))
 					query = new MatchAllDocsQuery();
 				else
 					query = parser.parse(repaceText(mesh.getKeyword()));
 				
-				System.out.println("-> Search Query: " + repaceText(mesh.getKeyword()));
+				System.out.println("\n-> Search Query: " + repaceText(mesh.getKeyword()));
+				
+				long start = System.currentTimeMillis();
 				
 				TopScoreDocCollector collector = TopScoreDocCollector.create(paging.getPage() * paging.getLimit());
 				searcher.search(query, collector);
 				
 				ScoreDoc[] hits = collector.topDocs(paging.getOffset(), paging.getLimit()).scoreDocs;
 
-				System.out.println("-> Total Results: " + collector.getTotalHits());
+				System.out.println(String.format("=> Finish searching in %s seconds, Total results: %s, Results per page: %s", (System.currentTimeMillis()-start) * Math.pow(10, -3) ,collector.getTotalHits(), hits.length));
+				
 				List<MeshTreeSentence> meshTreeSentence = new ArrayList<>();
-
+				
+				long extractTime = System.currentTimeMillis();
+				
 				for (int i = 0; i < hits.length; i++) {
 					Document doc = searcher.doc(hits[i].doc);
 
@@ -77,12 +79,12 @@ public class SentenceService {
 				paging.setTotalCount(collector.getTotalHits());
 				reader.close();
 				
+				System.out.println(String.format("=> Finish extracting in %s seconds", (System.currentTimeMillis() - extractTime) * Math.pow(10, -3)));
+				
 				return meshTreeSentence;
 			} catch (ParseException e) {
 				e.printStackTrace();
-			} finally{
-				System.out.println(String.format("=> Search finish in %s seconds", (System.currentTimeMillis() - start)*Math.pow(10, -3)));
-			}
+			} 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

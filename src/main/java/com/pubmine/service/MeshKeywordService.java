@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,9 @@ public class MeshKeywordService {
 	@Value("${pubmine.mesh.limit}")
 	private Integer meshLimit;
 
+	@Value("${pubmine.csv.path}")
+	private String csvPath;
+	
 	@Autowired
 	public MeshKeywordService(MeshRepository meshRepository, SentenceService sentenceService) {
 		this.meshRepository = meshRepository;
@@ -116,24 +120,45 @@ public class MeshKeywordService {
 		int page = 0, i=0;
 		
 		for(Map.Entry<String, List<Mesh>> map: mapMesh.entrySet()){
-			i=0;
-			System.out.println("=> Inserting Table: " + map.getKey());
-			for (Mesh m : map.getValue()) {
-				page = 1;
-				do{
-					paging.setPage(page);
-					List<MeshTreeSentence> meshTreeSentences = sentenceService.searchForMeshTree(m, paging);
+			System.out.println("Inserting " + map.getKey());
+			PrintWriter pw = null;
+			try{
+				pw = new PrintWriter(new File(String.format("%s/%s.csv", csvPath, map.getKey())));
+				String csvHeader = String.format("%s\t%s\t%s", "id", "pmid", "setence_order");
+				pw.println(csvHeader);
+				//i=0;
+				for (Mesh m : map.getValue()) {
+					page = 1;
+					do{
+						paging.setPage(page);
+						List<MeshTreeSentence> meshTreeSentences = sentenceService.searchForMeshTree(m, paging);
+						
+						if(meshTreeSentences.size() > 0){
+							this.writeCSV(pw, meshTreeSentences);
+						}
+						page++;
+					}while(page <= paging.getTotalPages());
 					
-					if(meshTreeSentences.size() > 0)
-						meshRepository.saveMeshTree(meshTreeSentences, map.getKey());
-					
-					page++;
-				}while(page <= paging.getTotalPages());
+					/*
+					i++;
+					if(i>5)
+						break;
+					*/
+				}
 				
-				i++;
-				if(i==10)
-					break;
+			}catch(Exception ex){
+				ex.printStackTrace();
+			}finally{
+				pw.close();
 			}
 		}
 	}
+
+	private void writeCSV(PrintWriter pw, List<MeshTreeSentence> meshTreeSentences) {
+		for (MeshTreeSentence m : meshTreeSentences) {
+			String csvBody = String.format("%s\t%s\t%s", m.getId(), m.getPmid(), m.getSentenceOrder());
+			pw.println(csvBody);
+		}
+	}
+	
 }

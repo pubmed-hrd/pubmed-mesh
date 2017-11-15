@@ -66,6 +66,10 @@
 			<version>${lucene.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>antlr</groupId>
+			<artifactId>antlr</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>

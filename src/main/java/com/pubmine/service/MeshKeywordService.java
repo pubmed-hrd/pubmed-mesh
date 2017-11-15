@@ -1,13 +1,11 @@
 package com.pubmine.service;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -106,7 +104,54 @@ public class MeshKeywordService {
 		System.out.println(String.format("Finish in %s seconds", (System.currentTimeMillis() - start) * Math.pow(10, -3)));
 	}
 
+	@Autowired
+	CsvWriterService csvService;
+	
 	public void meshSearchAndSave() {
+
+		MeshTable meshTable = this.read();
+		System.out.println("=> Finish read data!!!");
+		
+		Map<String, List<Mesh>> mapMesh = new HashMap<>();
+		mapMesh.put("mesh_anatomy_sentence", meshTable.getMeshAnatomy());
+		mapMesh.put("mesh_organisms_sentence", meshTable.getMeshAnatomy());
+		mapMesh.put("mesh_diseases_sentence", meshTable.getMeshDiseases());
+		mapMesh.put("mesh_chemicals_and_drugs_sentence", meshTable.getMeshAnatomy());
+		
+		Pagable paging = new Pagable();
+		paging.setLimit(meshLimit);
+		int page = 0;
+		
+		for(Map.Entry<String, List<Mesh>> map: mapMesh.entrySet()){
+			System.out.println("=> Executing table: " + map.getKey());
+			try {
+				String csvHeader = String.format("%s\t%s\t%s", "id", "pmid", "sentece_order");
+				PrintWriter pw = new PrintWriter(new File(String.format("%s/%s.csv", csvPath, map.getKey())));
+				pw.println(csvHeader);
+				
+				for (Mesh m : map.getValue()) {
+					page = 1;
+					do{
+						paging.setPage(page);
+						List<MeshTreeSentence> meshTreeSentences = sentenceService.searchForMeshTree(m, paging);
+						
+						if(meshTreeSentences.size() > 0){
+							for(MeshTreeSentence mesh: meshTreeSentences){
+								String csvBody = String.format("%s\t%s\t%s", mesh.getId(), mesh.getPmid(), mesh.getSentenceOrder());
+								pw.println(csvBody);
+							}
+						}
+						page++;
+					}while(page <= paging.getTotalPages());
+				}
+				pw.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/*public void meshSearchAndSave() {
 
 		MeshTable meshTable = this.read();
 		System.out.println("=> Finish read data!!!");
@@ -147,5 +192,5 @@ public class MeshKeywordService {
 			}
 		}
 		
-	}
+	}*/
 }

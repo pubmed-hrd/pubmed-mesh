@@ -39,6 +39,8 @@ public class SentenceService {
 
 	public List<MeshTreeSentence> searchForMeshTree(Mesh mesh, Pagable paging) {
 		
+		long start = System.currentTimeMillis();
+		
 		try {
 			reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
 			searcher = new IndexSearcher(reader);
@@ -61,7 +63,7 @@ public class SentenceService {
 				
 				ScoreDoc[] hits = collector.topDocs(paging.getOffset(), paging.getLimit()).scoreDocs;
 
-				System.out.println("-> Total results: " + collector.getTotalHits());
+				System.out.println("-> Total Results: " + collector.getTotalHits());
 				List<MeshTreeSentence> meshTreeSentence = new ArrayList<>();
 
 				for (int i = 0; i < hits.length; i++) {
@@ -73,15 +75,13 @@ public class SentenceService {
 					meshTreeSentence.add(new MeshTreeSentence(mesh.getId(), pmid, sentenceOrder));
 				}
 				paging.setTotalCount(collector.getTotalHits());
-				
 				reader.close();
-				
-				System.out.println("=> Searching finish!!!");
-				
 				
 				return meshTreeSentence;
 			} catch (ParseException e) {
 				e.printStackTrace();
+			} finally{
+				System.out.println(String.format("=> Search finish in %s seconds", (System.currentTimeMillis() - start)*Math.pow(10, -3)));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

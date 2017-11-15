@@ -75,6 +75,10 @@ public class SentenceService {
 				paging.setTotalCount(collector.getTotalHits());
 				
 				reader.close();
+				
+				System.out.println("=> Searching finish!!!");
+				
+				
 				return meshTreeSentence;
 			} catch (ParseException e) {
 				e.printStackTrace();
